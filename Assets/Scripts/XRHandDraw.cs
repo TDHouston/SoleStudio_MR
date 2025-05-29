@@ -5,20 +5,32 @@ using UnityEngine.XR;
 
 public class XRControllerDraw : MonoBehaviour
 {
-    [Header("Drawing Source")]
-    [SerializeField] private Transform drawPoint; // Assign tip of controller or child GameObject
+    public enum BrushShape
+    {
+        Round,
+        Ribbon,
+        Square
+    }
 
-    [Header("Input Settings")]
-    [SerializeField] private InputActionReference triggerAction; // Reference XR Trigger Input
+    [Header("Drawing Source")] [SerializeField]
+    private Transform drawPoint;
 
-    [Header("Draw Parameters")]
-    [SerializeField] private float minDistanceBeforeNewPoint = 0.008f;
+    [Header("Input Settings")] [SerializeField]
+    private InputActionReference triggerAction;
+
+    [Header("Draw Parameters")] [SerializeField]
+    private float minDistanceBeforeNewPoint = 0.008f;
+
     [SerializeField] private float tubeDefaultWidth = 0.010f;
     [SerializeField] private int tubeSides = 8;
     [SerializeField] private Color defaultColor = Color.white;
     [SerializeField] private Material defaultLineMaterial;
     [SerializeField] private bool enableGravity = false;
     [SerializeField] private bool colliderTrigger = false;
+    public GameObject currentShoeModel;
+
+    private float radiusX = 0.01f;
+    private float radiusY = 0.01f;
 
     private Vector3 prevPointDistance = Vector3.zero;
     private List<Vector3> points = new List<Vector3>();
@@ -57,8 +69,14 @@ public class XRControllerDraw : MonoBehaviour
     private void AddNewTubeRenderer()
     {
         points.Clear();
+
         GameObject go = new GameObject($"TubeRenderer__{tubeRenderers.Count}");
         go.transform.position = Vector3.zero;
+
+        if (currentShoeModel != null)
+        {
+            go.transform.SetParent(currentShoeModel.transform, worldPositionStays: true);
+        }
 
         TubeRenderer goTubeRenderer = go.AddComponent<TubeRenderer>();
         tubeRenderers.Add(goTubeRenderer);
@@ -68,8 +86,9 @@ public class XRControllerDraw : MonoBehaviour
 
         goTubeRenderer.ColliderTrigger = colliderTrigger;
         goTubeRenderer.SetPositions(points.ToArray());
-        goTubeRenderer._radiusOne = tubeDefaultWidth;
-        goTubeRenderer._radiusTwo = tubeDefaultWidth;
+
+        goTubeRenderer._radiusOne = radiusX;
+        goTubeRenderer._radiusTwo = radiusY;
         goTubeRenderer._sides = tubeSides;
 
         currentTubeRenderer = goTubeRenderer;
@@ -96,22 +115,69 @@ public class XRControllerDraw : MonoBehaviour
         currentTubeRenderer.GenerateMesh();
     }
 
+    public void SetLineWidth(float newWidth)
+    {
+        radiusX = newWidth;
+        radiusY = newWidth;
+        if (currentTubeRenderer != null)
+        {
+            currentTubeRenderer._radiusOne = newWidth;
+            currentTubeRenderer._radiusTwo = newWidth;
+        }
+    }
+
     public void UpdateLineWidth(float newValue)
     {
-        currentTubeRenderer._radiusOne = newValue;
-        currentTubeRenderer._radiusTwo = newValue;
-        tubeDefaultWidth = newValue;
+        SetLineWidth(newValue);
     }
 
     public void UpdateLineColor(Color color)
     {
         defaultColor = color;
         defaultLineMaterial.color = color;
-        currentTubeRenderer.material = defaultLineMaterial;
+        if (currentTubeRenderer != null)
+            currentTubeRenderer.material = defaultLineMaterial;
     }
 
     public void UpdateLineMinDistance(float newValue)
     {
         minDistanceBeforeNewPoint = newValue;
+    }
+
+    public void ClearAllDrawnMeshes()
+    {
+        foreach (var tube in tubeRenderers)
+        {
+            if (tube != null)
+            {
+                Destroy(tube.gameObject);
+            }
+        }
+
+        tubeRenderers.Clear();
+        points.Clear();
+        AddNewTubeRenderer();
+    }
+
+    public void SetBrushShape(BrushShape shape)
+    {
+        switch (shape)
+        {
+            case BrushShape.Round:
+                tubeSides = 8;
+                radiusX = 0.01f;
+                radiusY = 0.01f;
+                break;
+            case BrushShape.Ribbon:
+                tubeSides = 8;
+                radiusX = 0.015f;
+                radiusY = 0.003f;
+                break;
+            case BrushShape.Square:
+                tubeSides = 4;
+                radiusX = 0.01f;
+                radiusY = 0.01f;
+                break;
+        }
     }
 }

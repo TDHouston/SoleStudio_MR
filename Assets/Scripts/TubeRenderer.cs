@@ -53,6 +53,7 @@ public class TubeRenderer : MonoBehaviour
             _meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             _meshRenderer.receiveShadows = false;
         }
+
         _mesh = new Mesh();
         _meshFilter.mesh = _mesh;
 
@@ -173,7 +174,8 @@ public class TubeRenderer : MonoBehaviour
                 indices[currentIndicesIndex++] = vertIndex;
 
                 // Triangle two
-                indices[currentIndicesIndex++] = (side == _sides - 1) ? (prevVertIndex - (_sides - 1)) : (prevVertIndex + 1);
+                indices[currentIndicesIndex++] =
+                    (side == _sides - 1) ? (prevVertIndex - (_sides - 1)) : (prevVertIndex + 1);
                 indices[currentIndicesIndex++] = (side == _sides - 1) ? (vertIndex - (_sides - 1)) : (vertIndex + 1);
                 indices[currentIndicesIndex++] = prevVertIndex;
             }
@@ -184,42 +186,40 @@ public class TubeRenderer : MonoBehaviour
 
     private Vector3[] CalculateCircle(int index)
     {
-        var dirCount = 0;
-        var forward = Vector3.zero;
+        int dirCount = 0;
+        Vector3 forward = Vector3.zero;
 
-        // If not first index
         if (index > 0)
         {
             forward += (_positions[index] - _positions[index - 1]).normalized;
             dirCount++;
         }
 
-        // If not last index
         if (index < _positions.Length - 1)
         {
             forward += (_positions[index + 1] - _positions[index]).normalized;
             dirCount++;
         }
 
-        // Forward is the average of the connecting edges directions
         forward = (forward / dirCount).normalized;
-        var side = Vector3.Cross(forward, forward + new Vector3(.123564f, .34675f, .756892f)).normalized;
-        var up = Vector3.Cross(forward, side).normalized;
 
-        var circle = new Vector3[_sides];
-        var angle = 0f;
-        var angleStep = (2 * Mathf.PI) / _sides;
+        Vector3 side = Vector3.Cross(forward, forward + new Vector3(.123564f, .34675f, .756892f)).normalized;
+        Vector3 up = Vector3.Cross(forward, side).normalized;
 
-        var t = index / (_positions.Length - 1f);
-        var radius = _useTwoRadii ? Mathf.Lerp(_radiusOne, _radiusTwo, t) : _radiusOne;
+        Vector3[] circle = new Vector3[_sides];
+        float angle = 0f;
+        float angleStep = (2 * Mathf.PI) / _sides;
+
+        float t = index / (_positions.Length - 1f);
+        float radiusX = _radiusOne;
+        float radiusY = _radiusTwo;
 
         for (int i = 0; i < _sides; i++)
         {
-            var x = Mathf.Cos(angle);
-            var y = Mathf.Sin(angle);
+            float x = Mathf.Cos(angle);
+            float y = Mathf.Sin(angle);
 
-            circle[i] = _positions[index] + side * x * radius + up * y * radius;
-
+            circle[i] = _positions[index] + side * (x * radiusX) + up * (y * radiusY);
             angle += angleStep;
         }
 
